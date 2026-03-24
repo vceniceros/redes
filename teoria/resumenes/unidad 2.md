@@ -124,3 +124,104 @@ SMPT usa TCP como protocolo de transporte, el puerto por defecto para SMTP es el
 ## dns (Domain Name System)
 
 es un sistema de nombres de dominio que se utiliza para traducir nombres de dominio legibles por humanos (como www.ejemplo.com) en direcciones IP numéricas que las computadoras pueden entender, el DNS es esencial para el funcionamiento de internet, ya que permite a los usuarios acceder a sitios web y otros recursos utilizando nombres de dominio en lugar de tener que recordar direcciones IP numéricas.
+
+### flujo de una consulta DNS
+
+1. el browser extrae el hostname de la url y se lo pasa al cliente DNS
+2. el cliente dns envia una consulta con el hostname al servidor dns local
+3. eventualmente el cliente dns optiene la ip del hostname
+4. una vez el browser tiene la ip puede abrir la conexion TCP con el servidor web y enviar la solicitud HTTP
+
+### otras funciones dns
+
+- host aliasing: el DNS permite asignar múltiples nombres de dominio a una misma dirección IP, esto se conoce como host aliasing, lo que permite que un sitio web pueda ser accedido utilizando diferentes nombres de dominio.
+
+- mail server aliasing: el DNS también permite asignar múltiples nombres de dominio a una misma dirección IP para servidores de correo electrónico, esto se conoce como mail server aliasing, lo que permite que un servidor de correo electrónico pueda ser accedido utilizando diferentes nombres de dominio, ejemplo: yahoo.com puede ser un alias de relay1.west-coast.yahoo.com
+
+- load distribution: el DNS también se puede utilizar para distribuir la carga entre múltiples servidores, esto se conoce como load distribution, lo que permite que un sitio web pueda ser accedido utilizando diferentes direcciones IP, lo que mejora el rendimiento y la disponibilidad del sitio web.
+
+### desventaja de una base de datos dns centralizada
+
+- single point of failure: si la base de datos DNS centralizada falla, entonces todo el sistema DNS se verá afectado, lo que puede resultar en la incapacidad de resolver nombres de dominio y acceder a sitios web.
+
+- traffic bottleneck: una base de datos DNS centralizada puede convertirse en un cuello de botella para el tráfico de consultas DNS, lo que puede resultar en tiempos de respuesta lentos y una mala experiencia de usuario.
+
+- distant centralized database: una base de datos DNS centralizada puede estar ubicada en un lugar distante, lo que puede resultar en tiempos de respuesta lentos para los usuarios que se encuentran lejos de la ubicación de la base de datos.
+
+- maintenance: una base de datos DNS centralizada requiere mantenimiento constante para garantizar su disponibilidad y rendimiento, lo que puede ser costoso y complicado.
+
+
+### cache dns
+
+los dns tiene un servidor DNS que almacena resource records, cada record tiene un tiempo de vida (TTL) que indica cuánto tiempo el record puede ser almacenado en caché, esto permite que los clientes DNS puedan almacenar en caché las respuestas a las consultas DNS, lo que reduce la latencia y mejora el rendimiento de la resolución de nombres de dominio, sin embargo, si un record DNS cambia antes de que expire su TTL, los clientes DNS pueden seguir utilizando la información obsoleta hasta que expire el TTL, lo que puede resultar en problemas de conectividad y una mala experiencia de usuario.
+
+### tipos de resource records
+
+- A record: asigna un nombre de dominio a una dirección IPv4
+- AAAA record: asigna un nombre de dominio a una dirección IPv6
+- CNAME record: asigna un nombre de dominio a otro nombre de dominio (alias)
+- MX record: asigna un nombre de dominio a un servidor de correo electrónico
+- NS record: asigna un nombre de dominio a un servidor DNS autoritativo
+- PTR record: asigna una dirección IP a un nombre de dominio (registro inverso)
+- TXT record: asigna un nombre de dominio a un texto arbitrario, a menudo utilizado para verificación de dominio y autenticación de correo electrónico
+
+
+### jerarquia de servidores dns
+
+el sistema DNS se organiza en una jerarquía de servidores, cada servidor es responsable de una parte específica del espacio de nombres de dominio, la jerarquía de servidores DNS se compone de los siguientes niveles:
+
+- servidores raíz: son los servidores DNS de nivel más alto en la jerarquía, son responsables de mantener la información sobre los servidores DNS de nivel superior y proporcionar respuestas a las consultas DNS para los dominios de nivel superior(nota al pie:el . va por delante toda consulta dns ya que hace alusion a un servidor root, a partir de ese "."  es que se deducen todos los dns subsecuentes al mismo), son "12" servidores.
+
+- servidores de nivel superior: son los servidores DNS que mantienen la información sobre los dominios de nivel superior, como .com, .org, etc. Estos servidores son responsables de proporcionar respuestas a las consultas DNS para los dominios de su nivel.
+
+- servidores autoritativos: son los servidores DNS que mantienen la información sobre los dominios específicos, como www.ejemplo.com, estos servidores son responsables de proporcionar respuestas a las consultas DNS para los dominios específicos que manejan.
+
+### formato de mensajes dns 
+
+```
+Header: los primeros 12 bytes, los primeros 16 bits son el identificador de la query; esto para matchear las respuestas con su respectiva query, flags posibles: 1 bit si el mensaje es query o replay, 1 bit si el replay DNS es autoritativo o no, 1 para que el servidor trabaje recursivamente, etc.
+
+Question: contiene el nombre de dominio que se está consultando, el tipo de registro que se está solicitando (A, AAAA, CNAME, etc.) y la clase del registro (generalmente IN para Internet).
+
+Answer: contiene la respuesta a la consulta, incluyendo el nombre de dominio, el tipo de registro, la clase del registro, el tiempo de vida (TTL) del registro y los datos del registro (como la dirección IP para un registro A).
+
+Authority: contiene información sobre los servidores DNS autoritativos para el dominio consultado, incluyendo el nombre de dominio, el tipo de registro, la clase del registro, el tiempo de vida (TTL) del registro y los datos del registro (como la dirección IP del servidor DNS autoritativo).
+
+Additional: contiene información adicional que puede ser útil para resolver la consulta, como registros de recursos adicionales relacionados con el dominio consultado.
+```
+
+![capas de consulta dns](image-3.png)
+
+## servidores p2p
+
+en el paradigma peer-to-peer (p2p), los dispositivos actúan como iguales y pueden comunicarse directamente entre sí sin la necesidad de un servidor central, cada dispositivo puede actuar como cliente y servidor al mismo tiempo, si bien se tiene una especie de servidor central que es el tracker, este se encarga de mantener un registro de los peers disponibles y facilitar la conexión entre ellos, algunos ejemplos de aplicaciones p2p son los sistemas de intercambio de archivos como BitTorrent, etc.    
+
+suponieno que quisieramos distribuir un archivo de 15GB a 1000 usuarios, utilizando un servidor centralizado, el servidor tendría que enviar el archivo completo a cada usuario, lo que resultaría en una gran cantidad de tráfico y una carga significativa en el servidor, sin embargo, utilizando un enfoque peer-to-peer, cada usuario podría descargar partes del archivo de otros usuarios que ya lo han descargado, lo que reduciría significativamente la carga en el servidor y permitiría una distribución más eficiente del archivo, ejemplo bittorrent.
+
+### CDN (Content Delivery Network)
+
+es una red de servidores distribuidos geográficamente que se utilizan para entregar contenido web a los usuarios de manera más rápida y eficiente, las CDN funcionan almacenando copias del contenido web en múltiples servidores ubicados en diferentes partes del mundo, cuando un usuario solicita un recurso web, la CDN entrega el recurso desde el servidor más cercano al usuario, lo que reduce la latencia y mejora el rendimiento de la entrega de contenido, las CDN son especialmente útiles para sitios web con una audiencia global o para sitios web que manejan grandes cantidades de tráfico, ya que pueden ayudar a reducir la carga en el servidor principal y mejorar la experiencia del usuario.
+
+el contenido web que almacenan es estatico, es decir, no cambia con el tiempo, como imágenes, archivos HTML, etc. Sin embargo, algunas CDN también pueden manejar contenido dinámico, como páginas web generadas dinámicamente o aplicaciones web, lo que permite una entrega más rápida y eficiente de este tipo de contenido a los usuarios.
+
+
+### componentes de una CDN
+
+- servidores de origen: son los servidores que alojan el contenido web original, estos servidores son responsables de proporcionar el contenido a la CDN para que pueda ser almacenado en caché y entregado a los usuarios.
+
+- servidores de borde: son los servidores que se encuentran en la periferia de la red de la CDN, estos servidores son responsables de entregar el contenido a los usuarios finales, generalmente se encuentran ubicados cerca de los usuarios para reducir la latencia y mejorar el rendimiento.
+
+- point of presence (PoP): es un punto de presencia en la red de la CDN, es un lugar donde se encuentran los servidores de borde, generalmente se encuentran ubicados en centros de datos o en puntos de intercambio de Internet para mejorar la conectividad y el rendimiento.
+
+
+### tipos de CDN
+
+- CDN privada: es una CDN que es propiedad y está operada por una empresa o organización específica, estas CDN se utilizan principalmente para entregar contenido a los usuarios de esa empresa u organización, ejemplo: netflix, amazon prime, etc.
+
+- CDN pública: es una CDN que es operada por un proveedor de servicios de CDN y está disponible para cualquier empresa u organización que desee utilizarla, estas CDN se utilizan principalmente para entregar contenido a una audiencia global, ejemplo: cloudflare, akamai, etc.
+
+### filosofias de ubicacion de servidores de borde
+
+- enter-deep: esta filosofía se basa en la idea de colocar los servidores de borde lo más cerca posible de los usuarios finales, esto se logra mediante la implementación de servidores de borde en múltiples ubicaciones geográficas, lo que permite una entrega más rápida y eficiente del contenido a los usuarios, tiene menor latencia pero mayor costo.
+
+- bring-home: esta filosofía se basa en la idea de colocar los servidores de borde en ubicaciones estratégicas que estén cerca de los usuarios finales, pero no necesariamente lo más cerca posible, esto se logra mediante la implementación de servidores de borde en ubicaciones clave, como centros de datos o puntos de intercambio de Internet, lo que permite una entrega eficiente del contenido a los usuarios, tiene mayor latencia pero menor costo.
