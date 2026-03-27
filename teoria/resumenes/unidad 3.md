@@ -123,3 +123,107 @@ del lado receptor si se reciben bien y en orden con numero de secuencia n envia 
 hay casos donde GBN puede tener problemas de performance por ejemplo si se tiene una ventana grande y hay bandwith delay va a haber muchos paquetes en el pipeline y basta que alguna tenga error para tener que retransmitiro todos , el protocolo selective repeat retransmite solo los que sospecha que se hayan recibido con error, esto implica que los reconocimientos son individuales, el receptor reconoce un paquete que este o no en orden, los que esten desordenados se los guarda n un buffer hasta que llego un numero de menor secuencia y ahi se envian ordenados
 
 ![reordenamiento](image-14.png)
+
+no siempre el sender y el receiver van a tener la misma vista de que paquete se recibio o no, no siempre van a coincidir las ventanas
+
+![ejemplo de window gap](image-15.png)
+
+### otras caracteristicas del modelo TCP
+
+- estos son connection oriented porque siempre se tiene que establecer un handshake inicial, esta primera comunicacion inicializa variables de conexion.
+
+- una conexion tcp provee un servicio full duplex, si hay una conexion TCP entre un proceso A en un host y un proceso B en otro entonces los datos de la cpa de aplicaciones puedeb viajar tanto de A a B como de B a A al mismo tiempo.
+
+- una conexion tcp siempre es point to point, con un sender y un receiver, primero se establece con un three-way handshake(el cliente envia un segmento, el servidor responde con un segmento de reconocimiento, el cliente responde con un segmento de reconocimiento) establecida la conexion el cliente envia informacion a traves del socket, pasado el socket los datos quedan en manos de TCP de lado del cliente, TCP redirige los datos al buffer de envio, cada tanto los segmentos del buffer seran enviados a la capa de red, la cantidad maxima de datos que pueden tomar y enviar es limitada al tamaño maximo del segmento (MSS-maximum segment size),TCP empareja cada chunk de data con un header, formando segmentos, basicamente una conexion TCP consiste de buffers, variables y socket en ambos host
+
+![estructura de un segmento](image-16.png)
+
+numero de secuencia y de ack son usados por sender y receiver para garantizar una entrega confiables
+
+- se dice que TCP provee cumulative ack, porque solo reconoce bytes desde el primer byte faltante en el stream.
+
+- el campo receive windows se usa para controlar el flujo(indica cuantos bytes el receptor puede aceptar)
+
+- el campo header lenght especifica el tamaño del header, esto es necesario porque el header puede tener opciones, por ejemplo para establecer la conexion se pueden usar opciones para negociar el tamaño del segmento, o para establecer una conexion segura se pueden usar opciones para negociar los algoritmos de cifrado, etc.
+
+- el campo options se usa cuando el sender y receiver negocian el tamaño maximo del segmento.
+
+- el bit de ACk indica que el valor cargado en el campo ack es valido
+
+- los bits RST, SYN, Y FIN son para el setup y el tear down
+
+- los bits CWR y ECE son para el control de congestion, CWR indica que el sender ha reducido su tasa de envio y ECE indica que el sender ha recibido un mensaje de congestion.
+
+- El bit psh indica que al receiver que debe pasar inmediatamente los datos a capa de aplicacion
+
+
+- el bit urg indica que el campo urgent pointer es valido, el campo urgent pointer se usa para indicar que hay datos urgentes en el segmento, esto se puede usar para enviar datos de control o para enviar datos que necesitan ser procesados inmediatamente, por ejemplo si se esta transmitiendo un archivo y se quiere enviar un mensaje de control para indicar que se ha terminado de enviar el archivo, se puede usar el bit urg para indicar que el mensaje de control es urgente y debe ser procesado inmediatamente.
+
+- TCP usa un mecanismo de timeout/retransmision para segmentos perdidos.
+
+- recordar que si bien el servicio de IP no es confiable, TCP tiene que serlo, para ello tiene que construir un servicio de transferencia confiable sobre el servicio de ip
+
+- se recomienda un solo timer de retransmision.
+
+- se dice que el mecanismo de errores TCP es un hibrido de GBN y SR
+
+- para que llevar un control de flujo el sender tiene un buffer de tamaño RcvBuffer, talque lastByteRcvd es el numero de secuencia del ultimo byte recibido, lastByteAcked es el numero de secuencia del ultimo byte reconocido por un ACK, y RcvWindow es el tamaño de la ventana de recepcion, entonces el sender puede enviar bytes con numero de secuencia menor a lastByteAcked + RcvWindow, esto garantiza que el sender no envie mas bytes de los que el receptor puede aceptar.
+
+### procedimiento para establecer una conexion TCP
+
+1. el cliente envia un segmento con el bit SYN seteado, este segmento no tiene datos, solo tiene el header, el numero de secuencia es un numero aleatorio que se genera para identificar la conexion, este numero de secuencia se llama ISN (initial sequence number).
+
+2. el servidor responde con un segmento con los bits SYN y ACK seteados, el numero de secuencia es otro numero aleatorio que se genera para identificar la conexion, este numero de secuencia se llama ISN del servidor, el campo ack tiene el valor del ISN del cliente + 1, esto indica que el servidor ha recibido el segmento del cliente y esta reconociendo ese segmento.
+
+3. el cliente responde con un segmento con el bit ACK seteado, el numero de secuencia es el ISN del cliente + 1, el campo ack tiene el valor del ISN del servidor + 1, esto indica que el cliente ha recibido el segmento del servidor y esta reconociendo ese segmento, en este punto la conexion esta establecida y ambos host pueden empezar a enviar datos a traves de la conexion.
+
+![three way handshake](image-17.png)
+
+### para cerrar una conexion TCP
+
+1. el cliente envia un segmento con el bit FIN seteado, esto indica que el cliente ha terminado de enviar datos y quiere cerrar la conexion.
+
+2. el servidor responde con un segmento con el bit ACK seteado, esto indica que el servidor ha recibido el segmento del cliente y esta reconociendo ese segmento, en este punto el cliente ha cerrado su lado de la conexion pero el servidor todavia puede enviar datos al cliente.
+
+3. el cliente reconoce el segmento de shutdown del servidor con un segmento con el bit ACK seteado, esto indica que el cliente ha recibido el segmento del servidor y esta reconociendo ese segmento, en este punto la conexion esta completamente cerrada y ambos host han terminado de enviar datos a traves de la conexion, se desalocan los recursos asociados a la conexion en ambos host.
+
+![cierre de conexion](image-18.png)
+
+### casos borde
+
+1. dos host comparten un router con buffer infinito
+
+![dos host comparten buffer infinito](image-19.png)
+
+en el grafico se muestra el throughput de la conexion, cantidad de bytes por segundo en el receiver, en funcion del rate de envio del sender, con un sending entre 0 y R/2 el T va a ser igual al rate de envio, ahora si este supera R/2 este queda limitado a R/2 por la capacidad del linker, esto se llama el efecto de cuello de botella, el throughput de la conexion esta limitado por el enlace mas lento en la ruta entre el sender y el receiver, en este caso el enlace con capacidad R/2, por lo tanto el sender no puede enviar a una tasa mayor a R/2 sin que se produzca congestión en el enlace, esto se puede solucionar utilizando un mecanismo de control de congestion para limitar la tasa de envio del sender y evitar que se produzca congestión en el enlace.
+
+2. dos host comparten un router con buffer finito
+
+que sea finito implica que algunos paquetes se van a perder pero sigue siendo confiable porque se van a retransmitir.
+
+![dos host comparte un ruter de buffer finito](image-20.png)
+
+
+lo que si se observa es que el throughput de la conexion se ve afectado por la capacidad del buffer, si el buffer es muy pequeño, el sender no puede enviar a una tasa mayor a la capacidad del buffer sin que se produzca congestión en el enlace, esto se puede solucionar utilizando un mecanismo de control de congestion para limitar la tasa de envio del sender y evitar que se produzca congestión en el enlace.
+
+3. 4 hosts, routers con buffers finitos y multishop 
+
+![4 hosts](image-21.png)
+
+aca se ve el costo real de soltar un paquete debido a congestion, la capacidad de transmision que fue usada por todos los links fue desperdiciado debido a la perdida del paquete, TCP para controlar la congestion reduce o aumenta el rate de envio dependiendo de la congestion de la red, para eso usa congestion ward con el objetivo de limitar el send rate segun la cantidad de ack pendientes
+
+lastByteSent - lastByteAcked <= min{congestionWindowSize}
+
+### como TCP persive la congestion
+
+esto lo hace mediante la perdida de paquetes, entonces ante un timeout o 3 ack por un mismo segmento TCP percive la congestion, por contraparte si recibe todos los ack interpreta que no hay congestion, entonces TCP aumenta el congestion window size, esto se llama congestion avoidance, si TCP percive congestion reduce el congestion window size a la mitad, esto se llama multiplicative decrease, si TCP no percive congestion aumenta el congestion window size en 1 MSS cada vez que recibe un ack, esto se llama additive increase, entonces TCP tiene un comportamiento de aumento aditivo y disminucion multiplicativa, esto se llama AIMD (additive increase multiplicative decrease), este algoritmo permite a TCP adaptarse a las condiciones de la red y evitar la congestión.
+
+#### algunas guidelines
+
+- un paquete perdido implica congestion, por lo tanto TCP reduce el congestion window size a la mitad, esto se llama multiplicative decrease.
+
+- un ack indica que no hay congestion, por lo tanto TCP aumenta el congestion window size en 1 MSS cada vez que recibe un ack, esto se llama additive increase.
+
+- prueba de bandwith: TCP aumenta el congestion window size en 1 MSS cada vez que recibe un ack, esto permite a TCP probar la capacidad de la red y adaptarse a las condiciones de la red, si la red tiene una capacidad mayor a la que TCP esta usando, TCP va a aumentar el congestion window size y va a aumentar el throughput de la conexion, si la red tiene una capacidad menor a la que TCP esta usando, TCP va a percibir congestion y va a reducir el congestion window size, esto permite a TCP adaptarse a las condiciones de la red y evitar la congestión.
+
+
