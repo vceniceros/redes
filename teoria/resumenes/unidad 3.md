@@ -225,5 +225,3 @@ esto lo hace mediante la perdida de paquetes, entonces ante un timeout o 3 ack p
 - un ack indica que no hay congestion, por lo tanto TCP aumenta el congestion window size en 1 MSS cada vez que recibe un ack, esto se llama additive increase.
 
 - prueba de bandwith: TCP aumenta el congestion window size en 1 MSS cada vez que recibe un ack, esto permite a TCP probar la capacidad de la red y adaptarse a las condiciones de la red, si la red tiene una capacidad mayor a la que TCP esta usando, TCP va a aumentar el congestion window size y va a aumentar el throughput de la conexion, si la red tiene una capacidad menor a la que TCP esta usando, TCP va a percibir congestion y va a reducir el congestion window size, esto permite a TCP adaptarse a las condiciones de la red y evitar la congestión.
-
-
