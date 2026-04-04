@@ -1,5 +1,6 @@
 # capa de transporte
 
+
 la capa de transporte provee comunicacion logica entre aplicaciones, osea que para el usuario es como si las aplicaciones se comunicaran directamente, sin importar la red que hay entre ellas aunque fisicamenta haya routers y switches entre ellas, la capa de transporte se encarga de que los datos lleguen a su destino y que se mantenga la comunicacion entre las aplicaciones
 
 estos protoclos viven en los hosts pero no en los routers(idealmente) convierten mensajes de la capa de aplicacion en segmentos, y se encargan de enviar esos segmentos a la capa de red, y tambien reciben segmentos de la capa de red y los convierten en mensajes para la capa de aplicacion

@@ -1,5 +1,9 @@
 # unidad 4: capa de red
 
+
+## plano de datos
+
+
 la capa de red es la capa encargada de enruta(encargarse de mover) los paquetes de un host enviador a otro host receptor, incluso si estos hosts se encuentran en redes diferentes. esta capa es la encargada de determinar la ruta que los paquetes deben seguir para llegar a su destino.
 
 ## funciones de la capa de red
@@ -252,3 +256,152 @@ cada entrada de la tabla forwarding (flow table) incluye:
 - un set de contadores que se van actaulizando a medida que matchean los paquetes con las entradas de la tabla
 
 - un set de acciones a ejecutar cuando un paquete matchea con la entrada, ejemplo: enviar el paquete a una salida especifica, descartar el paquete, modificar el header del paquete, etc.
+
+## plano de control
+
+Hay dos aproaches para la intalacion y mantenimiento de tablas de forwarding:
+
+- Per router control: cada router tiene un protocolo, cada router tiene un componente que se comunica con componentes de otros routers para computar los valores de la tabla de forwarding, cada router tiene un componente que se encarga de instalar los valores computados en la tabla de forwarding, esta es la forma tradicional de hacer routing, es descentralizada y cada router es autonomo.
+
+![diagrama de router de control](image-45.png)
+
+- control centralizado: un controlador centralizado se encarga de computar los valores de la tabla de forwarding para todos los routers, el controlador se comunica con cada router para instalar los valores computados en la tabla de forwarding, esta es la forma moderna de hacer routing, es centralizada y el controlador es el encargado de tomar las decisiones de routing para toda la red.
+
+![diagrama de router centralizado](image-46.png)
+
+### como plantear el problema de routing
+
+lo ideal es pensarlo como grafos donde cada nodo es un router y cada arista es router y cada arista un enlace fisico donde el peso representa el "costo" ya sea en la distancia fisica, la velocidad o el costo monetario del enlace.
+
+![grafo de routing](image-47.png)
+
+el objetivo natural es encontrar el camino mas barato, una manera de clasificar a los algoritmos de routing es definiendo si son centalizados o no:
+
+- algoritmos de routing centralizados: busca el camino mas corto ya conociendo toda la topologia completa, el input seria la conectividad completa de nodos y aristas, algoritmos con estados globales se conocen como link state algorithms, entre los mas conocidos estan: dijkstra y bellman-ford.
+
+- algoritmos de routing descentralizados: cada router solo conoce la conectividad de sus vecinos, el calculo se hace de manera iterativa, cada router va actualizando su tabla de forwarding a medida que va recibiendo informacion de sus vecinos, algoritmos con estados locales se conocen como distance vector algorithms, entre los mas conocidos estan: bellman-ford y RIP.
+
+Una segunda manera de clasificar es si son estaticos o dinamicos:
+
+- estaticos: la tabla de forwarding se configura manualmente por el administrador de red, no se actualiza automaticamente, no se adapta a cambios en la topologia de la red, es util para redes pequeñas o con topologia fija, esto se da cuando la red cambia muy lentamente y solo por intervencion humana.
+
+- dinamicos: la tabla de forwarding se actualiza automaticamente a medida que cambian las condiciones de la red, se adapta a cambios en la topologia de la red o de trafico, es util para redes grandes o con topologia dinamica, esto se da cuando la red cambia frecuentemente y no se puede esperar a que un administrador de red actualice manualmente la tabla de forwarding.
+
+una tercer clasificacion podria ser si es load-sensitive o no: basicamente el costo de los enlaces puede ir variando segun si la red se congestiona o no.
+
+## algoritmo link state: dijkstra
+
+En este algoritmo la topologia de red y todos los costos de enlace son conocidos, esto se logra haciendo que todos los nodos broadcasteen paquetes link state a todos los demas nodos de la red, los algoritmos mas usados son PRIM y DIJKSTRA, el algoritmo de dijkstra es mas eficiente que el de prim, por lo que es el mas utilizado, es iterativo, tiene la particularidad de que en la k-esima iteracion, los caminos menos costosos van a ser  conocidos por k nodos destino, y entre esos caminos menos costosos eso k caminos van a tener los k costos mas pequeños, esto se puede usar para optimizar el algoritmo, ya que no es necesario ordenar todos los nodos destino por costo, sino solo los k nodos destino conocidos.
+
+### notacion
+
+```
+D(v) = costo del camino mas barato desde el nodo origen a v
+p(v) = nodo vecino de v que es el penultimo nodo en el camino mas barato
+N' = conjunto de nodos para los cuales se conoce el camino mas barato desde el nodo origen
+```
+
+el algorimto consiste en una inicializacion seguda por un loop que se ejecuta n veces si n es la cantidad de nodos en la red, en cada iteracion se agrega un nodo a N' y se actualizan los costos de los nodos vecinos del nodo agregado a N'.  
+
+```
+Inicializacion:
+    N' = {origen}
+    for todo nodo v:
+        if v es vecino de origen:
+            entonces D(V) = c(origen,v) -->c = costo del enlace entre origen y v
+        else D(v) = infinito
+Loop:
+    encontrar nodo w no en N' con el costo D(w) mas pequeño
+    agregar w a N'
+    for cada nodo v vecino de w que no este en N':
+        D(v) = min(D(v), D(w) + c(w,v))
+
+      el camino mas barato a w sumado al costo de w a v
+    
+    hasta que N' contenga todos los nodos de la red
+```
+
+### ejemplo
+
+| paso | N' | D(v), p(v) | D(w), p(w) | D(x), p(x) | D(y), p(y) | D(z), p(z) |
+| --- | --- | --- | --- | --- | --- | --- |
+| 0 | {u} | 2, u | 5, u | 1, u | infinito| infinito |
+| 1 | {u, x} | 2, u | 4, x |  | 2, x | infinito |
+| 2 | {u, x, y} | 2, u | 3, y |  |  | 4, y |
+| 3 | {u, x, y, w} |  | 3, y |  |  | 4, y |
+| 4 | {u, x, y, w, z} |  |  |  |  | 4, y |
+| 5 | {u, x, y, w, z} |  |  |  |  |  |
+
+
+![grafo de ejemplo](image-48.png)
+
+aca se ve como la complejidad es de O(n2) ya que en cada iteracion se busca el nodo con el costo mas pequeño.
+
+## algoritmo distance vector: bellman-ford
+
+Es iterativo, asincronico y distribuido, cada nodo recibe informacion sobre sus vecinos directos, hace calculos y distribuye los resultados devuelta a los vecinos, es iterativo porque se ejecuta hasta que no quede informacion de intercambio entre vecinos, es asoincronico porque no necesita que los nodos operen lockeandose entre ellos.
+
+ecuacion de bellman-ford:
+
+```math
+Dx(y) = min_{v} {c(x,v) + Dv(y)}
+
+```
+Donde Dx es el costo del camino mas barato desde el nodo x al nodo y, v es un nodo vecino de x, c(x,v) es el costo del enlace entre x y v, Dv(y) es el costo del camino mas barato desde el nodo v al nodo y.
+
+```
+Inicializacion:
+    para todo destino en N:
+        D(Y) = c(x,y) si y es vecino de x, sino D(y) = infinito
+    para cada vecino w:
+        D(Y) = ? para cada destino y en N
+    para cada vecino w:
+        enviar a w el vector de distancia D
+Loop:
+    esperar hasta recibir un vector de distancia Dv 
+    desde un vecino v
+    para cada destino y en N:
+        D(y) = min(c(x,v) + D(y))
+    si Dx(y) cambio para cualquier destino y:
+        enviar al vector distancia =  D(y): y en N para cada vecino w
+Forever
+
+```
+![ejemplo de grafo](image-49.png)
+
+
+## Intra AS routing
+
+hasta el momento se asumio que todos los routers tienen toda la informacion de todos los demas routers y esto no solo no es realista sino que conlleva dos problemas:
+
+- Escalabilidad: es redicula la cantidad de overhead necesario para tener toda la informacion de internet
+
+- Autonomia: internet es una red de ISPs, donde cada ISP tiene su propia red de router, cada ISP va a querer operar como le plazca.
+
+Por estos motivos se organizan los routers en sistemas llamados Autonomous Systems(AS) cada AS consiste en un grupo de routers bajo el mismo control administrativo, estos routers del mismo AS tiene el mismo protocolo de routing y tienen informacion completa de la topologia del AS, el algoritmo de routing que se utiliza dentro de un AS se llama intra autonomous system routing protocol.
+
+algunos protocolos de routing intra AS son:
+
+## open shortest path first (OSPF)
+
+
+es un protocolo link-state que utiliza "flooding of link state information" y el algoritmo de dijkstra para calcular los caminos mas cortos, cada router construye un grafo del AS entero, luego ejecuta el algoritmo de dijkstra para determinar el camino mas corto a todas las subredes, los router broadcastean la informacion de sus enlaces a todos los demas routers del AS, algunas ventajas de OSPF son:
+
+- seguridad: estos intercambios pueden ser autenticados, lo que evita que un atacante pueda enviar informacion falsa de routing. 
+
+- multiples caminos con el mismo costo: cuando hay muchos caminos a un mismo destino con el mismo costo, OSPF permite que se puedan usar todos esos caminos, esto se llama equal cost multipath routing.
+
+- soporte integrado para ruteo unicast y multicast.
+
+- permite jerarquia dentro de un AS.
+
+## routing amoung the ISPs: BGP
+
+cuando se routea un paquete dentro de un AS, la ruta la define el protocolo de routing intra AS, Pero un paquete pasa por varios ASs, para eso necesita un protocolo de inter-AS routing, en internet, se utiliza el protocolo de inter-AS routing. en internet, se utiliza el protocolo BGP(border gateway protocol) es el protoclo que hace de pegamento entre las miles de ISPs que tienen internet
+
+BGP provee a cada router:
+
+- obtener un prefijo de accesibilidad para la informacion de ASs vecinos, una subred "avisa" de su existencia y bgp se asegura de que todos los demas AS's sepan de esta subred
+
+- determinar la mejor ruta a los prefijos
+
