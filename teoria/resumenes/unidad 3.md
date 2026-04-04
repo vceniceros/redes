@@ -114,7 +114,7 @@ el sender tiene que responder a 3 tipos de eventos:
 2. recepcion de un ack: es acumulativo opor lo que por cada ack se debe reconocer los paquetes con numero de secuencia >= n.
 3. timeout: si se produce un timeout, el sender tiene que retransmitir todos los paquetes que han sido enviados pero no reconocidos por un ack, es decir todos los paquetes con numero de secuencia >= n.
 
-del lado receptor si se reciben bien y en orden con numero de secuencia n envia un ACK para los n paquetes recibidos, si se recibe un paquete con numero de secuencia mayor a n, se descarta el paquete y se vuelve a enviar un ACK para el ultimo paquete recibido correctamente, si se recibe un paquete con numero de secuencia menor a n, se vuelve a enviar un ACK para ese paquete, esto es para manejar los paquetes duplicados.
+del lado receptor si se https://campusgrado.fi.uba.ar/mod/resource/view.php?id=149875reciben bien y en orden con numero de secuencia n envia un ACK para los n paquetes recibidos, si se recibe un paquete con numero de secuencia mayor a n, se descarta el paquete y se vuelve a enviar un ACK para el ultimo paquete recibido correctamente, si se recibe un paquete con numero de secuencia menor a n, se vuelve a enviar un ACK para ese paquete, esto es para manejar los paquetes duplicados.
 
 ![flujo de go back n](image-13.png)
 
