@@ -405,3 +405,90 @@ BGP provee a cada router:
 
 - determinar la mejor ruta a los prefijos
 
+para cada AS, cada router puede ser un gateway router o un internal router, un gateway reouter es el que esta en el borde de un AS, se comunica con uno o mas router de otras AS,s, un internal router se conecta unicamente con routers y hosts del mismo AS.
+
+en bgp pares de routers intercambian informacion sobre conexiones tcp semipermanentes (usando puerto 179), cada conexion tcp se conoce com BGP connection, una conexion bgp que comunica dos AS se llama externa BGP (eBGP) mientras que una conexion BGP entre routers del mismo AS se conoce como internal BGP (iBGP)
+
+cuando un router avisa sobre un prefijo a traves de la conexion BGP, incluye varios atributos BGP, en la terminologia BGP a un prefijo acompañado de sus atributos se le llama ruta BGP, los dos atributos mas importantes AS-PATH y NEXT-HOP, AS-PATH contiene la lista de AS por los cuales paso el aviso, se usa para prevenir loop's, NEXT-HOP es la direccion IP de la interfaz del router que comienza el AS PATH, es la direccion UP del router mas cercano del AS abyasente
+
+el algoritmo de rooteo mas simple es el hot potato routing, en este algoritmo el camino elegido es aquel con el menor costo al router de NEXT-HOP.
+
+la idea del hot potato es visto desde cada AS quitarse de encima lo mas rapido posible a los paquetes sin tener que preocuparse por el costo de los paquetes una vez fuera delAS, se dice que "egoista" porque trate de reducir el costo del propio AS sin preocuparse por los costos externos.
+
+en la practica el algoritmos que se usa es route selecction, el input de este algorimo es un set de caminos hacia el prefijo que ya fueron aprendidos y aceptados por el router, si hay  mas de un camino al mismo prefijo se aplican reglas de eliminacion
+
+- un camino tiene asignado un atributo llamado 'local preference' tal que se elign los caminos con el mayor valor
+
+- de los restantes se seleccionar los camino con el menor AS-PATH
+
+- luego se utiliza hot potato
+
+- si siguen quedando mas de un camino se utilizan los identificadcos por el BGP
+
+Dato de color: ademas del protocolo de ruteo inter-AS , BGP, se suelen usar para implementar el servicio IP-anycast(comunmente usado en DNS) cuando un host envia un datagrama a una direccion anycast la infraestructura de red buscara el camino mas corto hasta uno y preferiblemente solo uno, del equipos que aceptan datagramas dirigidos a la direccion anycast utilizada el algoritmo BGP provee manera facil y natural de hacerlo.
+
+## plano de control SDN
+
+SDN(software defined networking) es un enfoque para el diseño de redes que separa el plano de control del plano de datos, en una red tradicional, el plano de control y el plano de datos estan integrados en cada router, cada router tiene su propio protocolo de routing y su propia tabla de forwarding, en una red SDN, el plano de control esta centralizado en un controlador SDN, el controlador se encarga de computar las tablas de forwarding para todos los routers y luego las instala en los routers a traves de un protocolo de comunicacion entre el controlador y los routers, esto permite una mayor flexibilidad y control sobre la red, ademas de que facilita la implementacion de nuevas funcionalidades y servicios en la red.
+
+algunas caracteristicas de SDN son:
+
+- flow based forwarding: el forwarding de paquetes por switches controlados por SDN úede basarse en cualquier numero de headers field values en la capa de transporte de red o de enlace, es el trabjo de la SDN computar, administrar e instalar las entradas de la tabla de flujo en todos los switches de la red
+
+- separacion del plano de control y el plano de datos: el plano de control esta centralizado en un controlador SDN, el plano de datos esta distribuido en los switches, esto permite una mayor flexibilidad y control sobre la red, ademas de que facilita la implementacion de nuevas funcionalidades y servicios en la red.
+
+- funciones de control de red en el controlador SDN: el controlador SDN se encarga de computar las tablas de forwarding para todos los routers, ademas de que puede implementar funciones de control de red como balanceo de carga, seguridad, etc, en otras palabras el control se maneja en la capa de software.
+
+- red programable: la red puede ser programada a traves de una API, esto permite a los desarrolladores crear aplicaciones y servicios que interactuen con la red de manera dinamica, ademas de que facilita la implementacion de nuevas funcionalidades y servicios en la red.
+
+![diagrama de los sdn controllers](image-50.png)
+
+las sdn se divide en 3 capas:
+
+- **capa de comunicacion:** es la comunicacion entre el controlador y los dispositivos de red controlados, se necesita un protocolo para transferir informacion del controlador a un dispositivo, ademas un dispositivo debe poder comunicar informacion al controlador, esta comunicacion se conoce como interfaz 'southbound'.
+
+- **capa de gestion de estado en toda la red:** todas las decisiones que toma la SDN requieren que el controlador tenga toda la informacion sobre el estado de la red actualizada (hosts, enlaces, switches, etc).
+
+- **interfaz para la capa de aplicacion de control de red:** el controlado interactua con las aplicaciones de contro a travez de la interfaz 'northbound', esta API permite a las aplicaciones de control de red leer/escribir el estado de la red y las tablas de flujo dentro de la capa de gestion de estado de red
+
+![diagrama detallado del SDN](image-51.png)
+
+### openFlow protocol
+
+
+Es un protocolo que opera entre un controlador SDN y un switch controlado por SDN, sus mensajes son:
+
+- **configuracion:** el controlador puede enviar mensajes de configuracion a los switches para configurar su comportamiento, por ejemplo para configurar las tablas de flujo, o para configurar las interfaces de red.
+
+- **modify-state:** el controlador puede enviar mensajes de modify-state a los switches para modificar su estado, por ejemplo para modificar las tablas de flujo, o para modificar las interfaces de red.
+
+- **read state:** el controlador puede enviar mensajes de read-state a los switches para leer su estado, por ejemplo para leer las tablas de flujo, o para leer las interfaces de red.
+
+- **packet-in:** un switch puede enviar paquetes al controlador.
+
+- **send packet:** el controlador puede enviar paquetes especificos a puertos especificos de un switch.
+
+- **flow-removed:** avisa que una entrada de la tabla de flujo fue removida.
+
+- **port-status:** avisa que el estado de un puerto cambio, por ejemplo que un puerto se desconecto o se conecto.
+
+
+## ICMP: internet control message protocol
+
+
+los usan los hostos y routers para comunicarse entre si informacion de la capa de red, el caso tipico es informar errorer, estos mensajes viajan en datagramas IP, como payload de ip, tienen un campo type y otro code y contienen el header y los primeros 8 bytes del datagrama IP que casuo que se genere el mensaje, traceroute esta implementado por mensajes ICMP.
+
+
+componentes clave:
+
+- el server managing es la aplicacion que controla la coleccion, procesamiento y analisis de los mensajes ICMP.
+
+- el managed device es una pieza de equipamiento de red que reside en la managed network y que es capaz de generar mensajes ICMP, por ejemplo un router o un host.
+
+- toda la informacion recolectada se almacena en el management information base (MIB), esta es una base de datos que contiene toda la informacion sobre los mensajes ICMP generados por los managed devices, esta informacion se puede usar para analizar el estado de la red, detectar problemas, etc.
+
+- un network management agent es un proceso corriendo en el managed device que se comunica con el server managing.
+
+- un network management protocol es un protocolo que se utiliza para la comunicacion entre el server managing y el network management agent, el protocolo mas utilizado es SNMP(simple network management protocol).
+
+![snmp map](image-52.png)
