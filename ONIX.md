@@ -30,12 +30,12 @@ El resultado era una colección "barroca" de protocolos con propiedades de escal
 
 Las redes no tenían un **paradigma de control general** ni abstracciones de gestión a nivel de toda la red. Onix se propone como una **plataforma de control de calidad productiva** sobre la cual el plano de control se implementa como sistema distribuido, operando sobre una **vista global de la red** y usando primitivas de distribución de estado provistas por la plataforma.
 
-La filosofía central de SDN según el paper: **las primitivas básicas de distribución de estado deben implementarse una sola vez en la plataforma**, usando técnicas conocidas de la literatura de sistemas distribuidos, en lugar de reinventarse para cada tarea de control con algoritmos especializados.
+La idea central de SDN según el paper es que **los mecanismos para distribuir el estado de la red se implementen una sola vez en la plataforma, en lugar de rehacerlos para cada función de control**. Y que se resuelvan con técnicas ya probadas de los sistemas distribuidos, no con algoritmos especializados hechos a mano para cada caso.
 
 ### Desafíos de una plataforma de control productiva
 - **Generalidad** — la API debe permitir aplicaciones muy diversas en contextos diversos.
-- **Escalabilidad** — los límites de escala deben venir del problema inherente de gestión de estado, no de la implementación de la plataforma.
-- **Confiabilidad** — manejar fallos de equipo (y otros) con gracia.
+- **Escalabilidad** —  si la red crece y el sistema empieza a no dar abasto, que sea por lo difícil que es manejar tantos estados, no porque la plataforma esté mal hecha.
+- **Confiabilidad** —uando algo se rompe (un equipo, lo que sea), que el sistema completo no se rompa.
 - **Simplicidad** — facilitar la construcción de aplicaciones de gestión.
 - **Rendimiento del plano de control** — adecuado, no necesariamente óptimo (se prioriza generalidad sobre rendimiento cuando hay que elegir).
 
@@ -87,7 +87,7 @@ Características importantes de la NIB:
 
 ## 5. Paralelismo con el paradigma orientado a objetos (POO) ⭐
 
-Este es, a mi juicio, uno de los aspectos más elegantes del diseño, y **no es una analogía superpuesta: Onix está literalmente implementado con POO en C++.**
+Este es, a mi juicio, uno de los aspectos más elegantes del diseño, y **no es una analogía: Onix está literalmente implementado con POO en C++.**
 
 - **Clase base**: la NIB contiene entidades de red genéricas, cada una con un conjunto de pares **clave-valor** y un identificador global plano de **128 bits**. Esa es la estructura base de la que derivan todos los tipos.
 - **Herencia**: las **entidades tipadas** (`Node`, `Port`, `Link`, `ForwardingEngine`, `ForwardingTable`, `Host`) heredan de esa clase base. En la **Figura 2** del paper, las **líneas sólidas representan herencia** y todas las clases tipadas comparten la base que provee el acceso genérico clave-valor.
@@ -119,7 +119,7 @@ Onix ofrece tres estrategias para escalar:
 Las aplicaciones sobre Onix deben manejar **cuatro tipos de fallo**:
 
 1. **Fallos de elemento de forwarding** y **fallos de enlace** — se manejan con los mismos mecanismos que los planos de control modernos (desviar tráfico). Conviene apoyarse en **backup paths** con failover rápido en el propio elemento.
-2. **Fallos de instancia Onix** — dos opciones: que instancias vivas detecten al nodo caído y asuman sus responsabilidades, o que **más de una instancia gestione** simultáneamente un elemento (manejando condiciones de carrera de *lost update*). Si toda instancia computa el estado de forma **determinista** (mismo algoritmo en todas), la inconsistencia es solo transitoria. Enfoque similar a RCP.
+2. **Fallos de instancia Onix** — dos opciones: que instancias vivas detecten al nodo caído y asuman sus responsabilidades, o que **más de una instancia gestione** simultáneamente un elemento (manejando race conditions de *lost update*). Si toda instancia computa el estado de forma **determinista** (mismo algoritmo en todas), la inconsistencia es solo transitoria. Enfoque similar a RCP.
 3. **Fallos de la infraestructura de conectividad** — los mecanismos de distribución se desacoplan de la topología subyacente y necesitan conectividad para recuperarse. Soluciones comunes: red/VLAN de gestión dedicada (aislada del plano de datos), o estado de forwarding estático combinado con **source routing + multipathing** para conectividad ultra-confiable.
 
 ---
@@ -171,8 +171,6 @@ Onix **no impone** un protocolo único hacia los switches; la interfaz primaria 
 
 ## 11. Métricas y evaluación
 
-> **NOTA:** dejar aquí las imágenes de los gráficos del paper. Cada bloque tiene su placeholder y la referencia a la figura/tabla correspondiente.
-
 La evaluación combina **micro-benchmarks** (rendimiento como plataforma general) y mediciones **end-to-end** de una aplicación en desarrollo.
 
 ### 11.1 Escalabilidad — nodo único
@@ -223,8 +221,7 @@ La evaluación combina **micro-benchmarks** (rendimiento como plataforma general
 
 ---
 
-## 12. Trabajo relacionado (en breve)
-
+## 12. Trabajo relacionado 
 Onix desciende de la línea que separa control de dataplane (4D, RCP, SANE, Ethane, NOX, OpenFlow), pero con foco en ser **productivo a gran escala** (confiabilidad, escalabilidad, generalidad). Es **complementario** a la línea de planos de forwarding extensibles (RouteBricks, Click, XORP) y puede servir de plataforma para arquitecturas de datacenter como SEATTLE, VL2 y PortLand. Sigue además la tradición de sistemas distribuidos que **relajan la consistencia** con ayuda de la aplicación (Bayou, PRACTI, WheelFS, PNUTS).
 
 ---
